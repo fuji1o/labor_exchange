@@ -1,8 +1,8 @@
-from sqlalchemy import ForeignKey, String, Boolean, Text
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from decimal import Decimal
 from datetime import datetime
+from decimal import Decimal
 
+from sqlalchemy import Boolean, ForeignKey, String, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from storage.sqlalchemy.client import Base
 
@@ -23,4 +23,3 @@ class Job(Base):
 
     user: Mapped["User"] = relationship(back_populates="jobs")  # noqa
     responses: Mapped["Response"] = relationship(back_populates="job")  # noqa
-    
