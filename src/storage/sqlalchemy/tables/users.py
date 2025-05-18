@@ -15,6 +15,7 @@ class User(Base):
     name: Mapped[str] = mapped_column(comment="Имя пользователя")
     hashed_password: Mapped[str] = mapped_column(comment="Зашифрованный пароль")
     is_company: Mapped[bool] = mapped_column(comment="Флаг компании")
+
     created_at: Mapped[datetime] = mapped_column(
         comment="Время создания записи", default=datetime.utcnow
     )
