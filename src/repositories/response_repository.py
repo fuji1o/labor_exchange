@@ -1,0 +1,137 @@
+from contextlib import AbstractContextManager
+from typing import Callable
+
+from sqlalchemy import select
+from sqlalchemy.orm import Session, selectinload
+
+from interfaces import IRepositoryAsync
+from models import Job as JobModel
+from models import Response as ResponseModel
+from models import User as UserModel
+from storage.sqlalchemy.tables import Response
+from web.schemas.response import ResponseUpdateSchema, ResponsneCreateSchema
+
+
+class ResponseRepository(IRepositoryAsync):
+    def __init__(self, session: Callable[..., AbstractContextManager[Session]]):
+        self.session = session
+
+    async def create(self, response_create_dto: ResponsneCreateSchema) -> ResponseModel:
+        async with self.session() as session:
+            response = Response(
+                job_id=response_create_dto.job_id,
+                user_id=response_create_dto.user_id,
+                message=response_create_dto.message,
+            )
+
+            session.add(response)
+            await session.commit()
+            await session.refresh(response)
+        return self.__to_response_model(response_from_db=response, include_relations=False)
+
+    async def retrieve(self, include_relations: bool = False, **kwargs) -> ResponseModel:
+        async with self.session() as session:
+            query = select(Response).filter_by(**kwargs).limit(1)
+            if include_relations:
+                query = query.options(selectinload(Response.user), selectinload(Response.job))
+
+            res = await session.execute(query)
+            response_from_db = res.scalars().first()
+
+            response_model = self.__to_response_model(
+                response_from_db=response_from_db, include_relations=include_relations
+            )
+        return response_model
+
+    async def retrieve_many(
+        self, limit: int = 100, skip: int = 0, include_relations: bool = False
+    ) -> list[ResponseModel]:
+        async with self.session() as session:
+            query = select(Response).limit(limit).offset(skip)
+            if include_relations:
+                query = query.options(selectinload(Response.user)).options(
+                    selectinload(Response.job)
+                )
+
+            res = await session.execute(query)
+            responses_from_db = res.scalars().all()
+
+        responses_model = []
+        for response in responses_from_db:
+            model = self.__to_response_model(
+                response_from_db=response, include_relations=include_relations
+            )
+            responses_model.append(model)
+
+        return responses_model
+
+    async def update(self, id: int, response_update_dto: ResponseUpdateSchema) -> ResponseModel:
+        async with self.session() as session:
+            query = select(Response).filter_by(id=id).limit(1)
+            res = await session.execute(query)
+            response_from_db = res.scalars().first()
+            if not response_from_db:
+                raise ValueError("Отклик не найден")
+
+            if response_update_dto.message is not None:
+                response_from_db.message = response_update_dto.message
+
+            session.add(response_from_db)
+            await session.commit()
+            await session.refresh(response_from_db)
+
+        return self.__to_response_model(response_from_db, include_relations=False)
+
+    async def delete(self, id: int) -> ResponseModel:
+        async with self.session() as session:
+            query = select(Response).filter_by(id=id).limit(1)
+            res = await session.execute(query)
+            response_from_db = res.scalars().first()
+
+            if response_from_db:
+                await session.delete(response_from_db)
+                await session.commit()
+            else:
+                raise ValueError("Отклик не найден")
+
+        return self.__to_response_model(response_from_db, include_relations=False)
+
+    @staticmethod
+    def __to_response_model(
+        response_from_db: Response, include_relations: bool = False
+    ) -> ResponseModel:
+        user_model = None
+        job_model = None
+
+        if response_from_db:
+            if include_relations:
+                if response_from_db.user:
+                    user_model = UserModel(
+                        id=response_from_db.user.id,
+                        name=response_from_db.user.name,
+                        email=response_from_db.user.email,
+                        is_company=response_from_db.user.user.is_company,
+                    )
+                if response_from_db.user.job:
+                    job_model = JobModel(
+                        id=response_from_db.job.id,
+                        user_id=response_from_db.job.user_id,
+                        title=response_from_db.job.title,
+                        description=response_from_db.job.description,
+                        salary_from=response_from_db.job.salary_from,
+                        salary_to=response_from_db.job.salary_to,
+                        is_active=response_from_db.job.is_active,
+                        created_at=response_from_db.job.created_at,
+                    )
+
+            response_model = ResponseModel(
+                id=response_from_db.id,
+                job_id=response_from_db.job_id,
+                user_id=response_from_db.user_id,
+                message=response_from_db.message,
+                user=user_model,
+                job=job_model,
+            )
+            return response_model
+
+        return None
