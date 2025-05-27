@@ -1,28 +1,23 @@
-from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel
-
-from models import Job as JobModel
-from models import User as UserModel
+from pydantic import BaseModel, Field
 
 
-class ResponsneCreateSchema(BaseModel):
-    id: int
-    job_id: int
-    user_id: int
-    message: str
+class ResponseCreateSchema(BaseModel):
+    job_id: int = Field(..., description="Идентификатор вакансии")
+    user_id: int = Field(..., description="Идентификатор пользователя")
+    message: Optional[str] = Field(None, description="Сопроводительное письмо")
 
 
 class ResponseUpdateSchema(BaseModel):
     # сопроводительное письмо можно изменить только до того, как работодатель посмотрит его
-    message: str
+    message: Optional[str] = Field(None, description="Сопроводительное письмо")
 
 
 class ResponseSchema(BaseModel):
-    id: int
-    job_id: int
-    user_id: int
-    message: str
-    user: Optional[UserModel] = None
-    job: Optional[JobModel] = None
+    job_id: int = Field(..., description="Идентификатор вакансии")
+    user_id: int = Field(..., description="Идентификатор пользователя")
+    message: str = Field(None, description="Сопроводительное письмо")
+
+    class Config:
+        from_attributes = True
