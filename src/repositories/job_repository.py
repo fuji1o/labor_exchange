@@ -85,17 +85,4 @@ class JobRepository(IRepositoryAsync):
             if res.rowcount == 0:
                 raise ValueError("Вакансия не найдена")
 
-        return None  # правильно ли возвращать None
-
-    """
-    async def delete(self, id: int):
-        async with self.session() as session:
-        job_from_db = await self.retrieve(id=id)
-        if not job_from_db:
-            raise ValueError("Вакансия не найдена")
-        else:
-            await session.delete(job_from_db)
-            await session.commit()
-
-        return to_model(job_from_db, include_relations=False)
-    """
+        return None
