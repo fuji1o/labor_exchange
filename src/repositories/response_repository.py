@@ -86,16 +86,4 @@ class ResponseRepository(IRepositoryAsync):
             if res.rowcount == 0:
                 raise ValueError("Отклик не найден")
 
-        return None  # правильно ли возвращать none?
-
-    """async def delete(self, id: int) -> ResponseModel:
-        async with self.session() as session:
-            response_from_db = await self.retrieve(id = id)
-
-            if not response_from_db:
-                raise ValueError("Отклик не найден")
-            else:
-                await session.delete(response_from_db)
-                await session.commit()
-
-        return to_model(response_from_db, ResponseModel)"""
+        return None
