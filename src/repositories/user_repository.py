@@ -80,21 +80,6 @@ class UserRepository(IRepositoryAsync):
         new_user = to_model(user_from_db, UserModel)
         return new_user
 
-    """async def delete(self, id: int):
-        async with self.session() as session:
-            query = select(User).filter_by(id=id).limit(1)
-            res = await session.execute(query)
-            user_from_db = res.scalars().first()
-
-            if user_from_db:
-                await session.delete(user_from_db)
-                await session.commit()
-            else:
-                raise ValueError("Пользователь не найден")
-
-        return to_model(user_from_db, UserModel)
-        """
-
     async def delete(self, id: int):
         async with self.session() as session:
             query = delete(User).where(User.id == id)
