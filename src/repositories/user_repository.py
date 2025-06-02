@@ -6,8 +6,9 @@ from sqlalchemy.orm import Session, selectinload
 
 from interfaces import IRepositoryAsync
 from models import User as UserModel
+from repositories.job_repository import JobModel
+from repositories.response_repository import ResponseModel
 from storage.sqlalchemy.tables import User
-from tools.converter import to_model
 from tools.updater import update_model
 from web.schemas import UserCreateSchema, UserUpdateSchema
 
@@ -29,7 +30,7 @@ class UserRepository(IRepositoryAsync):
             await session.commit()
             await session.refresh(user)
 
-        return to_model(user, UserModel)
+        return self.__to_user_model(user_from_db=user, include_relations=False)
 
     async def retrieve(self, include_relations: bool = False, **kwargs) -> UserModel:
         async with self.session() as session:
@@ -40,7 +41,9 @@ class UserRepository(IRepositoryAsync):
             res = await session.execute(query)
             user_from_db = res.scalars().first()
 
-        user_model = to_model(user_from_db, UserModel)
+        user_model = self.__to_user_model(
+            user_from_db=user_from_db, include_relations=include_relations
+        )
         return user_model
 
     async def retrieve_many(
@@ -56,7 +59,7 @@ class UserRepository(IRepositoryAsync):
 
         users_model = []
         for user in users_from_db:
-            model = to_model(user, UserModel)
+            model = self.__to_user_model(user_from_db=user, include_relations=include_relations)
             users_model.append(model)
 
         return users_model
@@ -77,7 +80,7 @@ class UserRepository(IRepositoryAsync):
             await session.commit()
             await session.refresh(user_from_db)
 
-        new_user = to_model(user_from_db, UserModel)
+        new_user = self.__to_user_model(user_from_db, include_relations=False)
         return new_user
 
     async def delete(self, id: int):
@@ -89,4 +92,49 @@ class UserRepository(IRepositoryAsync):
             if res.rowcount == 0:
                 raise ValueError("Пользователь не найден")
 
-        return None 
+        return None
+
+    @staticmethod
+    def __to_user_model(user_from_db: User, include_relations: bool = False) -> UserModel:
+        user_jobs = []
+        user_responses = []
+        user_model = None
+
+        if user_from_db:
+            if include_relations:
+                if user_from_db.is_company:
+                    user_jobs = [
+                        JobModel(
+                            id=job.id,
+                            user_id=job.user_id,
+                            title=job.title,
+                            description=job.description,
+                            salary_from=job.salary_from,
+                            salary_to=job.salary_to,
+                            is_active=job.is_active,
+                            responses=job.responses,
+                        )
+                        for job in user_from_db.jobs
+                    ]
+                else:
+                    user_responses = [
+                        ResponseModel(
+                            id=response.id,
+                            job_id=response.job_id,
+                            user_id=response.user_id,
+                            message=response.message,
+                        )
+                        for response in user_from_db.responses
+                    ]
+
+            user_model = UserModel(
+                id=user_from_db.id,
+                name=user_from_db.name,
+                email=user_from_db.email,
+                hashed_password=user_from_db.hashed_password,
+                is_company=user_from_db.is_company,
+                jobs=user_jobs,
+                responses=user_responses,
+            )
+
+        return user_model
