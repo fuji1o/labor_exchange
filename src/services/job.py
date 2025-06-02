@@ -8,10 +8,10 @@ class JobService(BaseService):
     def __init__(self, job_repository: IRepositoryAsync):
         super().__init__(job_repository)
 
-    async def create(self, is_company: bool, job_create_dto: JobCreateSchema):
+    async def create(self, user_id: int, is_company: bool, job_create_dto: JobCreateSchema):
         if not is_company:
             raise PermissionError("Недостаточно прав")
-        return await self.repository.create(job_create_dto=job_create_dto)
+        return await self.repository.create(job_create_dto=job_create_dto, user_id=user_id)
 
     async def retrieve(self, **kwargs):
         job = await super().retrieve(**kwargs)
