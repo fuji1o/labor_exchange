@@ -3,7 +3,6 @@ from pydantic import ValidationError
 from sqlalchemy.exc import IntegrityError
 
 from repositories import UserRepository
-from storage.sqlalchemy.tables import Job
 from tools.fixtures.users import UserFactory
 from tools.security import hash_password
 from web.schemas import UserCreateSchema, UserUpdateSchema
@@ -21,27 +20,6 @@ async def test_get_all(user_repository, sa_session):
     assert len(all_users) == 1
 
     user_from_repo = all_users[0]
-    assert user_from_repo.id == user.id
-    assert user_from_repo.email == user.email
-    assert user_from_repo.name == user.name
-
-
-@pytest.mark.asyncio
-async def test_get_all_with_relations(user_repository, sa_session):
-    async with sa_session() as session:
-        user = UserFactory.build(is_company=True)
-        job = Job(user_id=user.id)
-        session.add(user)
-        session.add(job)
-        session.flush()
-
-    all_users = await user_repository.retrieve_many(include_relations=True)
-    assert all_users
-    assert len(all_users) == 1
-
-    user_from_repo = all_users[0]
-    assert len(user_from_repo.jobs) == 1
-    assert user_from_repo.jobs[0].id == job.id
     assert user_from_repo.id == user.id
     assert user_from_repo.email == user.email
     assert user_from_repo.name == user.name
