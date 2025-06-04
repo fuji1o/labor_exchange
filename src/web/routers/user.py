@@ -6,10 +6,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from dependencies import get_current_user
 from dependencies.containers import ServicesContainer
 from models import User
-from repositories import UserRepository
 from services.exseptions import UserAlreadyExistsError, UserNotFoundError
 from services.user import UserService
-from tools.security import hash_password
 from web.schemas import UserCreateSchema, UserSchema, UserUpdateSchema
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -69,7 +67,7 @@ async def create_user(
         )
 
 
-@router.put("/{id}")
+@router.put("")
 @inject
 async def update_user(
     user_update_schema: UserUpdateSchema,
@@ -78,14 +76,15 @@ async def update_user(
 ) -> UserSchema:
     try:
         updated_user = await user_service.update(
-            user_id=current_user.id,
+            id=current_user.id,
+            current_user_id=current_user.id,
             user_update_dto=user_update_schema,
         )
         return UserSchema(**asdict(updated_user))
-    except PermissionError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Недостаточно прав")
     except UserNotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Пользователь не найден")
+    except PermissionError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Недостаточно прав")
 
 
 @router.delete("/{id}")
