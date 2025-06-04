@@ -14,10 +14,18 @@ class ResponseService(BaseService):
 
         return await self.repository.create(response_create_dto)
 
-    async def retrieve(self, **kwargs):
-        response = await super().retrieve(**kwargs)
+    async def retrieve(self, *, user_id: int, is_company: bool, id: int):
+        response = await self.repository.retrieve(id=id)
         if not response:
             raise ResponseNotFoundError("Отклик не найден")
+
+        if is_company:
+            if not hasattr(response, "job") or response.job.user_id != user_id:
+                raise PermissionError("Нет доступа к отклику (работодатель не владелец вакансии)")
+        else:
+            if response.user_id != user_id:
+                raise PermissionError("Нет доступа к отклику (не ваш отклик)")
+
         return response
 
     async def retrieve_many(self, limit: int, skip: int):

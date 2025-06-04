@@ -9,7 +9,7 @@ from models import User as UserModel
 from storage.sqlalchemy.tables import User
 from tools.converter import to_model
 from tools.updater import update_model
-from web.schemas import UserCreateSchema, UserUpdateSchema
+from web.schemas import UserCreateSchema, UserInDB, UserSchema, UserUpdateSchema
 
 
 class UserRepository(IRepositoryAsync):
@@ -29,7 +29,7 @@ class UserRepository(IRepositoryAsync):
             await session.commit()
             await session.refresh(user)
 
-        return to_model(user, UserModel)
+        return to_model(user, UserInDB)
 
     async def retrieve(self, include_relations: bool = False, **kwargs) -> UserModel:
         async with self.session() as session:
@@ -40,8 +40,7 @@ class UserRepository(IRepositoryAsync):
             res = await session.execute(query)
             user_from_db = res.scalars().first()
 
-        user_model = to_model(user_from_db, UserModel)
-        return user_model
+        return to_model(user_from_db, UserInDB)
 
     async def retrieve_many(
         self, limit: int = 100, skip: int = 0, include_relations: bool = False
@@ -54,12 +53,7 @@ class UserRepository(IRepositoryAsync):
             res = await session.execute(query)
             users_from_db = res.scalars().all()
 
-        users_model = []
-        for user in users_from_db:
-            model = to_model(user, UserModel)
-            users_model.append(model)
-
-        return users_model
+        return to_model(users_from_db, UserSchema)
 
     async def update(self, id: int, user_update_dto: UserUpdateSchema) -> UserModel:
         async with self.session() as session:
@@ -77,8 +71,7 @@ class UserRepository(IRepositoryAsync):
             await session.commit()
             await session.refresh(user_from_db)
 
-        new_user = to_model(user_from_db, UserModel)
-        return new_user
+        return to_model(user_from_db, UserSchema)
 
     async def delete(self, id: int):
         async with self.session() as session:
@@ -88,5 +81,4 @@ class UserRepository(IRepositoryAsync):
 
             if res.rowcount == 0:
                 raise ValueError("Пользователь не найден")
-
-        return None 
+        return None

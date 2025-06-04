@@ -9,7 +9,7 @@ from models import Response as ResponseModel
 from storage.sqlalchemy.tables import Response
 from tools.converter import to_model
 from tools.updater import update_model
-from web.schemas.response import ResponseCreateSchema, ResponseUpdateSchema
+from web.schemas.response import ResponseCreateSchema, ResponseSchema, ResponseUpdateSchema
 
 
 class ResponseRepository(IRepositoryAsync):
@@ -27,7 +27,7 @@ class ResponseRepository(IRepositoryAsync):
             session.add(response)
             await session.commit()
             await session.refresh(response)
-        return to_model(response, ResponseModel)
+        return to_model(response, ResponseSchema)
 
     async def retrieve(self, include_relations: bool = False, **kwargs) -> ResponseModel:
         async with self.session() as session:
@@ -38,7 +38,7 @@ class ResponseRepository(IRepositoryAsync):
             res = await session.execute(query)
             response_from_db = res.scalars().first()
 
-        return to_model(response_from_db, ResponseModel) if response_from_db else None
+        return to_model(response_from_db, ResponseSchema)
 
     async def retrieve_many(
         self, limit: int = 100, skip: int = 0, include_relations: bool = False
@@ -53,12 +53,7 @@ class ResponseRepository(IRepositoryAsync):
             res = await session.execute(query)
             responses_from_db = res.scalars().all()
 
-        responses_model = []
-        for response in responses_from_db:
-            model = to_model(response, ResponseModel)
-            responses_model.append(model)
-
-        return responses_model
+        return [to_model(response, ResponseSchema) for response in responses_from_db]
 
     async def update(self, id: int, response_update_dto: ResponseUpdateSchema) -> ResponseModel:
         async with self.session() as session:
@@ -75,7 +70,7 @@ class ResponseRepository(IRepositoryAsync):
             await session.commit()
             await session.refresh(response_from_db)
 
-        return to_model(response_from_db, ResponseModel)
+        return to_model(response_from_db, ResponseSchema)
 
     async def delete(self, id: int):
         async with self.session() as session:

@@ -6,9 +6,9 @@ from dependency_injector import providers
 from fastapi import FastAPI
 
 from config import DBSettings
-from dependencies.containers import RepositoriesContainer
+from dependencies.containers import RepositoriesContainer, ServicesContainer
 from storage.sqlalchemy.client import SqlAlchemyAsync
-from web.routers import auth_router, user_router
+from web.routers import auth_router, job_router, response_router, user_router
 
 env_file_name = ".env." + os.environ.get("STAGE", "dev")
 env_file_path = Path(__file__).parent.resolve() / env_file_name
@@ -26,12 +26,25 @@ def create_app():
         ),
     )
 
-    # инициализация приложения
+    services_container = ServicesContainer(
+        repositories_container=providers.DependenciesContainer(
+            user_repository=repo_container.user_repository,
+            job_repository=repo_container.job_repository,
+            response_repository=repo_container.response_repository,
+        )
+    )
+
     app = FastAPI()
-    app.container = repo_container
+    app.container = services_container
+
+    @app.get("/")
+    async def root():
+        return {"message": "Welcome to the Labor Exchange API"}
 
     app.include_router(auth_router)
     app.include_router(user_router)
+    app.include_router(job_router)
+    app.include_router(response_router)
 
     return app
 
