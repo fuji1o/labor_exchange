@@ -43,7 +43,11 @@ async def read_response(
     response_service: ResponseService = Depends(Provide[ServicesContainer.response_service]),
 ) -> ResponseSchema:
     try:
-        resp = await response_service.retrieve(id=response_id)
+        resp = await response_service.retrieve(
+            id=response_id,
+            user_id=current_user.id,
+            is_company=current_user.is_company,
+        )
 
         if not current_user.is_company and resp.user_id != current_user.id:
             raise HTTPException(
@@ -78,7 +82,7 @@ async def create_response(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Недостаточно прав")
 
 
-@router.put("/{response_id}")
+@router.put("")
 @inject
 async def update_response(
     response_id: int,
