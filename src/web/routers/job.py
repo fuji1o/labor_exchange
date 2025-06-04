@@ -25,7 +25,7 @@ async def read_jobs(
             id=job.id,
             title=job.title,
             description=job.description,
-            user_id=job.user.id,
+            user_id=job.user_id,
             salary_from=job.salary_from,
             salary_to=job.salary_to,
         )
@@ -45,7 +45,7 @@ async def read_job(
             id=job.id,
             title=job.title,
             description=job.description,
-            user_id=job.user.id,
+            user_id=job.user_id,
             salary_from=job.salary_from,
             salary_to=job.salary_to,
         )
@@ -62,13 +62,15 @@ async def create_job(
 ) -> JobSchema:
     try:
         job = await job_service.create(
-            is_company=current_user.is_company, job_create_dto=job_create_dto
+            user_id=current_user.id,
+            is_company=current_user.is_company,
+            job_create_dto=job_create_dto,
         )
         return JobSchema(
             id=job.id,
             title=job.title,
             description=job.description,
-            user_id=job.user.id,
+            user_id=job.user_id,
             salary_from=job.salary_from,
             salary_to=job.salary_to,
         )
@@ -92,7 +94,7 @@ async def update_job(
             id=job.id,
             title=job.title,
             description=job.description,
-            user_id=job.user.id,
+            user_id=job.user_id,
             salary_from=job.salary_from,
             salary_to=job.salary_to,
         )
